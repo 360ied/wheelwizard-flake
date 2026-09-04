@@ -26,9 +26,7 @@
       packages = forEachSystem (
         { pkgs, ... }:
         rec {
-          wheelwizard-2_5_1 = pkgs.callPackage ./package.nix { version = "2.5.1"; };
-          wheelwizard-2_5_3 = pkgs.callPackage ./package.nix { version = "2.5.3"; };
-          wheelwizard = wheelwizard-2_5_1;
+          wheelwizard = pkgs.callPackage ./package.nix { };
           default = wheelwizard;
         }
       );
@@ -52,8 +50,6 @@
 
       overlays.default = final: _prev: {
         wheelwizard = final.callPackage ./package.nix { };
-        wheelwizard-2_5_1 = final.callPackage ./package.nix { version = "2.5.1"; };
-        wheelwizard-2_5_3 = final.callPackage ./package.nix { version = "2.5.3"; };
       };
 
       devShells = forEachSystem (

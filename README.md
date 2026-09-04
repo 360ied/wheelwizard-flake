@@ -7,21 +7,13 @@ Nix flake packaging for [WheelWizard](https://github.com/TeamWheelWizard/WheelWi
 ### Run directly
 
 ```bash
-# Run default version (v2.5.1)
 nix run
-
-# Run v2.5.3
-nix run .#wheelwizard-2_5_3
 ```
 
 ### Build
 
 ```bash
-# Build default (v2.5.1)
 nix build
-
-# Build v2.5.3
-nix build .#wheelwizard-2_5_3
 ```
 
 The resulting binary will be at `./result/bin/WheelWizard`.

@@ -7,26 +7,16 @@
   makeWrapper,
   # Runtime dependencies
   libglvnd,
-  version ? "2.5.1",
-  hash ? (
-    let
-      hashes = {
-        "2.5.1" = "sha256-lLGtzdE5MFfwwlGm5eA+MKYiY9oQhohtiVTqtmglols=";
-        "2.5.3" = "sha256-r8H2UCsasYTZ4sChzHbgFDKmccQEnYkA8WfR+UmLzrM=";
-      };
-    in
-    hashes.${version} or (throw "Unsupported wheelwizard version ${version}")
-  ),
 }:
 buildDotnetModule (finalAttrs: {
   pname = "wheelwizard";
-  inherit version;
+  version = "2.5.3";
 
   src = fetchFromGitHub {
     owner = "TeamWheelWizard";
     repo = "WheelWizard";
     tag = "v${finalAttrs.version}";
-    inherit hash;
+    hash = "sha256-r8H2UCsasYTZ4sChzHbgFDKmccQEnYkA8WfR+UmLzrM=";
   };
 
   postPatch = ''
