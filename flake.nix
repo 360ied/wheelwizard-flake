@@ -39,10 +39,12 @@
           wheelwizard = {
             type = "app";
             program = "${self.packages.${system}.wheelwizard}/bin/WheelWizard";
+            meta.description = "WheelWizard Launcher";
           };
           fetch-deps = {
             type = "app";
             program = "${self.packages.${system}.wheelwizard.passthru.fetch-deps}";
+            meta.description = "Regenerate deps.json for WheelWizard";
           };
           default = wheelwizard;
         }
