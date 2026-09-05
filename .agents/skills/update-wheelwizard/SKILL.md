@@ -15,10 +15,10 @@ Execute the script (optionally providing a target version):
 
 ```bash
 # Update to latest upstream release
-./.agents/skills/update-wheelwizard/scripts/update.sh
+./scripts/update.sh
 
 # Or update to a specific version
-./.agents/skills/update-wheelwizard/scripts/update.sh <VERSION>
+./scripts/update.sh <VERSION>
 ```
 
 The script automatically fetches the new release tag, updates the source hash and version in `package.nix`, regenerates `deps.json`, stages files in git, and runs `nix build` and `nix flake check`.

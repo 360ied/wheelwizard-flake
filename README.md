@@ -41,9 +41,25 @@ In your `flake.nix`:
 }
 ```
 
+### Updating WheelWizard
+
+To update WheelWizard to the latest upstream release:
+
+```bash
+./scripts/update.sh
+```
+
+Or to target a specific version:
+
+```bash
+./scripts/update.sh <version>
+```
+
+This script updates the source hash in `package.nix`, regenerates `deps.json`, and verifies the build.
+
 ### Updating Nuget Dependencies
 
-To regenerate `deps.json`:
+To regenerate `deps.json` manually:
 
 ```bash
 nix run .#fetch-deps -- ./deps.json
