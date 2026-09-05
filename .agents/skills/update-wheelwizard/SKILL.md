@@ -5,51 +5,31 @@ description: >-
   updating or bumping WheelWizard in package.nix, or regenerating NuGet dependencies (deps.json).
 ---
 
-# Update WheelWizard Skill
+# Update WheelWizard
 
-Procedure and tools for updating the WheelWizard package to the latest upstream release.
+Run the automated update script, then troubleshoot and resolve any build or packaging failures.
 
-## Automated Update
+## 1. Run the Update Script
 
-Run the bundled update script:
+Execute the script (optionally providing a target version):
 
 ```bash
 # Update to latest upstream release
 ./.agents/skills/update-wheelwizard/scripts/update.sh
 
-# Or update to a specific version/tag
-./.agents/skills/update-wheelwizard/scripts/update.sh 2.5.3
+# Or update to a specific version
+./.agents/skills/update-wheelwizard/scripts/update.sh <VERSION>
 ```
 
-## Manual Update Procedure
+The script automatically fetches the new release tag, updates the source hash and version in `package.nix`, regenerates `deps.json`, stages files in git, and runs `nix build` and `nix flake check`.
 
-If running manually or debugging:
+## 2. Troubleshoot & Fix Failures
 
-1. **Check latest upstream release**:
-   ```bash
-   curl -sL https://api.github.com/repos/TeamWheelWizard/WheelWizard/releases/latest | jq -r '{tag: .tag_name, name: .name}'
-   ```
+If the script fails during build or check:
 
-2. **Compute source SRI hash**:
-   ```bash
-   TAG="v<VERSION>"
-   RAW_HASH=$(nix-prefetch-url --unpack "https://github.com/TeamWheelWizard/WheelWizard/archive/refs/tags/${TAG}.tar.gz")
-   nix hash convert --to sri --hash-algo sha256 "$RAW_HASH"
-   ```
+- **.NET Target Framework changes**: Inspect `TargetFramework` in upstream `WheelWizard/WheelWizard.csproj`. If bumped, adjust `dotnet-sdk`, `dotnet-runtime`, and the `cp -r .../netX.X/...` path in `package.nix` and `flake.nix`.
+- **New runtime dependencies**: Check if new native libraries are required and add them to `runtimeDeps` in `package.nix`.
+- **Desktop / Asset path changes**: Verify whether desktop files, icons, or binary outputs moved in upstream repo.
+- **Dependency restoration errors**: If NuGet dependencies fail to restore, inspect `deps.json` and retry `nix run .#fetch-deps -- ./deps.json`.
 
-3. **Update `package.nix`**:
-   - Set `version = "<VERSION>"`.
-   - Set `hash = "sha256-..."`.
-
-4. **Regenerate NuGet dependencies**:
-   ```bash
-   git add package.nix
-   nix run .#fetch-deps -- ./deps.json
-   ```
-
-5. **Verify**:
-   ```bash
-   git add deps.json
-   nix build
-   nix flake check
-   ```
+Re-run `nix build` and `nix flake check` to verify before concluding.
