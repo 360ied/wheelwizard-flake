@@ -10,13 +10,13 @@
 }:
 buildDotnetModule (finalAttrs: {
   pname = "wheelwizard";
-  version = "2.5.4";
+  version = "2.5.5";
 
   src = fetchFromGitHub {
     owner = "TeamWheelWizard";
     repo = "WheelWizard";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-7JiB1oaNSxh88xzAlh3LJt7WocKsZ4cmKqcdOjT8Jps=";
+    hash = "sha256-pzo2x4pMdsCkZRMMNro8PosOhy1kLhLK+uiNJJ/9fwk=";
   };
 
   postPatch = ''
