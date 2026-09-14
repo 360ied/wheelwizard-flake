@@ -4,19 +4,26 @@
   desktop-file-utils,
   dotnetCorePackages,
   fetchFromGitHub,
-  makeWrapper,
-  # Runtime dependencies
+  fontconfig,
   libglvnd,
+  libX11,
+  libXcursor,
+  libXext,
+  libXi,
+  libXrandr,
+  libxkbcommon,
+  makeWrapper,
+  wayland,
 }:
 buildDotnetModule (finalAttrs: {
   pname = "wheelwizard";
-  version = "2.5.6";
+  version = "2.5.7";
 
   src = fetchFromGitHub {
     owner = "TeamWheelWizard";
     repo = "WheelWizard";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-jTCHHnba/BCdOYOw9zedkJWdp8MuRrxJKbBHXCzU9I4=";
+    hash = "sha256-bN0GtoPrMK5+cd7pTf+uRpVab8opTkCm22m4n4Uss8o=";
   };
 
   postPatch = ''
@@ -35,7 +42,15 @@ buildDotnetModule (finalAttrs: {
   ];
 
   runtimeDeps = [
+    fontconfig
     libglvnd
+    libX11
+    libXcursor
+    libXext
+    libXi
+    libXrandr
+    libxkbcommon
+    wayland
   ];
 
   installPhase = ''
