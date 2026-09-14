@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+cleanup() {
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    echo "Update failed. Modified files may be staged in git (run 'git status')." >&2
+  fi
+}
+trap cleanup EXIT
+
+for cmd in nix curl jq; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Error: Required command '$cmd' is not installed or not in PATH." >&2
+    exit 1
+  fi
+done
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
@@ -31,7 +46,7 @@ Options:
   -h, --help            Display this help message
 
 Environment Variables:
-  FORCE=1               Equivalent to --force
+  FORCE=1               Equivalent to --force (also accepts 'true' or 'yes')
   NUGET_HTTP_CACHE_PATH Custom path for NuGet HTTP cache (speeds up dependency restoration)
 EOF
 }
@@ -63,6 +78,10 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
+    --)
+      shift
+      break
+      ;;
     -*)
       echo "Error: Unknown option $1" >&2
       usage >&2
@@ -79,6 +98,17 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
   esac
+done
+
+while [[ $# -gt 0 ]]; do
+  if [ -z "$TARGET_VERSION" ]; then
+    TARGET_VERSION="$1"
+  else
+    echo "Error: Unexpected argument '$1'" >&2
+    usage >&2
+    exit 1
+  fi
+  shift
 done
 
 TARGET_VERSION="${TARGET_VERSION:-latest}"
@@ -99,15 +129,29 @@ else
   TAG="v${TARGET_VERSION#v}"
 fi
 
+if [[ -z "$TAG" || "$TAG" == "null" ]]; then
+  echo "Error: Failed to resolve valid release tag." >&2
+  exit 1
+fi
+
 VERSION="${TAG#v}"
 
 if [ "$CHECK_ONLY" -eq 1 ]; then
   echo "Current version: $CURRENT_VERSION"
-  echo "Latest version:  $VERSION (tag: $TAG)"
-  if [ "$VERSION" = "$CURRENT_VERSION" ]; then
-    echo "Flake is up to date."
+  if [ "$TARGET_VERSION" = "latest" ]; then
+    echo "Latest version:  $VERSION (tag: $TAG)"
+    if [ "$VERSION" = "$CURRENT_VERSION" ]; then
+      echo "Flake is up to date."
+    else
+      echo "Update available: $CURRENT_VERSION -> $VERSION"
+    fi
   else
-    echo "Update available: $CURRENT_VERSION -> $VERSION"
+    echo "Target version:  $VERSION (tag: $TAG)"
+    if [ "$VERSION" = "$CURRENT_VERSION" ]; then
+      echo "Flake is already on version $VERSION."
+    else
+      echo "Target version differs from current version: $CURRENT_VERSION -> $VERSION"
+    fi
   fi
   exit 0
 fi
@@ -115,7 +159,7 @@ fi
 echo "Targeting version: $VERSION (tag: $TAG)"
 echo "Current version:   $CURRENT_VERSION"
 
-if [ "$VERSION" = "$CURRENT_VERSION" ] && [ "$FORCE" != "1" ]; then
+if [ "$VERSION" = "$CURRENT_VERSION" ] && [[ ! "$FORCE" =~ ^(1|true|yes)$ ]]; then
   echo "Already on version $VERSION. Use --force or FORCE=1 to force update."
   exit 0
 fi
@@ -123,7 +167,6 @@ fi
 echo "Prefetching archive for $TAG..."
 PREFETCH_JSON=$(nix store prefetch-file --json --hash-type sha256 --unpack "https://github.com/TeamWheelWizard/WheelWizard/archive/refs/tags/${TAG}.tar.gz")
 SRI_HASH=$(jq -r .hash <<< "$PREFETCH_JSON")
-STORE_PATH=$(jq -r .storePath <<< "$PREFETCH_JSON")
 
 echo "Source hash: $SRI_HASH"
 
@@ -139,20 +182,20 @@ if [ "$DRY_RUN" -eq 1 ]; then
 fi
 
 echo "Updating package.nix..."
-sed -i -E "s/version = \"[^\"]+\"/version = \"$VERSION\"/" package.nix
-sed -i -E "s|hash = \"[^\"]+\"|hash = \"$SRI_HASH\"|" package.nix
+sed -i -E "s/^[[:space:]]*version = \"[^\"]+\";/  version = \"$VERSION\";/" package.nix
+sed -i -E "s|^[[:space:]]*hash = \"[^\"]+\";|    hash = \"$SRI_HASH\";|" package.nix
 
 echo "Validating Nix evaluation..."
 git add package.nix
-nix eval --raw .#wheelwizard.name > /dev/null
+nix eval .#wheelwizard.drvPath > /dev/null
 
 if [ "$SKIP_DEPS" -eq 1 ]; then
   echo "Skipping deps.json regeneration (--skip-deps specified)..."
 else
   echo "Regenerating deps.json..."
   # Ensure NuGet cache directory exists for fast restores
-  NUGET_CACHE="${NUGET_HTTP_CACHE_PATH:-$HOME/.local/share/NuGet/v3-cache}"
-  mkdir -p "$NUGET_CACHE"
+  export NUGET_HTTP_CACHE_PATH="${NUGET_HTTP_CACHE_PATH:-$HOME/.local/share/NuGet/v3-cache}"
+  mkdir -p "$NUGET_HTTP_CACHE_PATH"
   nix run .#fetch-deps -- ./deps.json
   git add deps.json
 fi

@@ -21,12 +21,15 @@ If the flake is already up to date, conclude the task immediately.
 
 ## 2. Upstream Change Pre-Check (Optional but Recommended)
 
-If an update is available, inspect what changed upstream before building:
+If an update is available, inspect what changed upstream before building.
 
+You can inspect changed files via GitHub compare API (note: subject to GitHub API rate limits if unauthenticated):
 ```bash
-# View list of changed files between releases
-curl -sL "https://api.github.com/repos/TeamWheelWizard/WheelWizard/compare/v<CURRENT>...v<TARGET>" | jq -r '.files[].filename'
+# View list of changed files between releases (e.g. v2.5.6...v2.5.7)
+curl -sL "https://api.github.com/repos/TeamWheelWizard/WheelWizard/compare/<OLD_TAG>...<NEW_TAG>" | jq -r '.files[].filename'
 ```
+
+Alternatively, run `./scripts/update.sh --dry-run` to prefetch the new source into the Nix store, allowing you to inspect files locally without making any GitHub API calls.
 
 Look for:
 - `WheelWizard.csproj`: Dependency version bumps (.NET framework, Avalonia, DBus, etc.). If `<PackageReference>` entries are unchanged, you can use `--skip-deps`.
@@ -57,7 +60,7 @@ The script automatically:
 1. Resolves the latest release tag via fast HTTP redirect (avoiding GitHub API rate limits).
 2. Prefetches the source archive into the Nix store and computes SRI hash.
 3. Updates `version` and `hash` in `package.nix`.
-4. Runs a fast evaluation check (`nix eval`) to catch syntax issues immediately.
+4. Runs a fast evaluation check (`nix eval .#wheelwizard.drvPath`) to catch syntax and derivation issues immediately.
 5. Regenerates `deps.json` via `nix run .#fetch-deps` (unless `--skip-deps` is set).
 6. Builds the package with streaming logs (`nix build -L`) and runs `nix flake check`.
 
@@ -67,7 +70,7 @@ If the script fails during build or check:
 
 - **Quick Nix evaluation check**:
   ```bash
-  nix eval --raw .#wheelwizard.name
+  nix eval .#wheelwizard.drvPath
   ```
 - **Inspect build logs**:
   ```bash

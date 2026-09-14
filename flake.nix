@@ -59,6 +59,8 @@
             packages = with pkgs; [
               dotnetCorePackages.sdk_10_0-bin
               dotnetCorePackages.runtime_10_0-bin
+              curl
+              jq
             ];
           };
         }
